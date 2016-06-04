@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html>
+	<body>
+		<canvas id="myCanvas" width="800" height ="480" style ="border:	1px solid black" >
+		<script src="Variables.js"></script>
+		<script src="Maths.js"></script>
+		<script src="Images.js"></script>
+		<script>
+			//
+			
+			can.onmouseup = clicked;
+		
+			function user(){
+				this.x=0;
+				this.y=0;
+				this.ix = 0;
+				this.iy = 0;
+				this.health= 0;
+				
+			}
+			
+			var player = new user;
+			
+			function rotateAndPaintImage ( context, image, angleInRad , positionX, positionY, axisX, axisY, scalex, scaley) {
+				
+					context.translate( positionX, positionY );
+					context.rotate( degreeToRad(angleInRad) );
+					context.drawImage( image, -axisX, -axisY, scalex, scaley );
+					context.rotate( -degreeToRad(angleInRad) );
+					context.translate( -positionX, -positionY );
+				
+			}
+			
+			
+			function food(){
+				this.x = rnd(100,sw-100);
+				this.y = sh;
+				this.scale = rnd(.15,.2);
+				this.vx = 20-rnd(0,40);
+				this.vy = -rnd(50,80);
+				this.ay = .9;
+				this.ax = .5-rnd(0,1);
+				this.a = 180;
+				this.r = rnd(0,360);
+				this.tr = rnd(0,2)-1;
+				this.image = Math.floor(rnd(0,numImages-1));
+				if (type[this.image]===1){
+					this.h=10;
+				}else{
+					this.h=-10;
+				}
+				this.buff;
+				this.debuff;
+				this.ix,this.iy,this.isx,this.isy;
+			}
+			
+			function clicked(e){
+				//console.log("clicked");
+				if (gameStarted){
+					player.x = e.offsetX;
+					player.y = e.offsetY;
+					
+				}
+			}
+			
+			function game(){
+				for(var i = 0; i < stamps.length; i++){
+					stamps[i].y += stamps[i].vy * time;	
+					stamps[i].vy += stamps[i].ay * time;
+					stamps[i].ay += -.5*cos(stamps[i].a);
+					stamps[i].x += stamps[i].vx * time;
+					stamps[i].vx += stamps[i].ax *time;
+					stamps[i].ax =-.5*sin(stamps[i].a);
+					stamps[i].r-=stamps[i].tr;
+					if(colTest(player , stamps[i])){
+							if(type[stamps[i].image]===1){
+								bfood++;
+							}else{
+								gfood ++;
+							}
+							FoodCount[stamps[i].image]++;
+							player.health+=point[stamps[i].image];
+							//console.log(point[stamps[i].image]);
+							sndlayer.push(new Audio("collide.sound2.mp3"));
+							sndlayer[sndlayer.length-1].play();
+							stamps.splice(i,1);
+							foodConsumed++;
+							
+							if(player.health >= calLimit){
+								var s = ("You finnished with "+foodConsumed + " food items eaten, totalling "+player.health+" calories.");
+								if (bfood===0){
+									s+=("You ate "+gfood+" healthy food! GOOD JOB!" +"\n"+"You are a heath nut! Excelent, keep it up!");
+								}else{
+									s+=("You ate "+gfood+" healthy food! GOOD JOB!" +"\n"+"You also ate "+bfood+" unhealthy foods, keep trying!");
+								}
+								s+= "\n"+"View Stats?";
+								if(confirm(s)){
+									var s = "Healthy Food:\n";
+											for(var i = 0;i<FoodCount.length;i++){
+												if (type[i] === 1){
+													s+= FoodName[i]+" : x" +FoodCount[i]+"\n";
+												}
+											}
+										s+="\n";
+										s+="Unhealth Food:\n";
+											for(var i = 0;i<FoodCount.length;i++){
+												if (type[i] === 0){
+													s+= FoodName[i]+" : x" +FoodCount[i]+"\n";
+												}
+											}
+										alert(s);
+								}else{
+									location.reload();
+								}
+								if(confirm("Would you like to continue playing?")){
+									maxStamps++;
+								}else{
+									location.reload();
+								}
+								
+								
+								
+								
+								for(var i = 0 ; i<FoodCount.length;i++){
+									FoodCount[i]=0;
+								}
+								player.health = 0;
+								bfood = 0;
+								gfood = 0;
+								foodConsumed = 0;
+								
+								
+							}
+						}
+				}
+			}
+			function autoGen(){
+				for(var i = 0; i < stamps.length;i++){
+					if(stamps[i].y>700){
+						stamps.splice(i,1);
+					}
+				}
+				if (stamps.length < maxStamps){
+					stamps.push(new food());
+				}
+			}
+			
+			function drawCircle(x,y,r){
+				ctx.beginPath();
+				ctx.arc(x, y, r, 0, Math.PI*2, true); 
+				ctx.closePath();
+				ctx.fill();
+			}
+			
+			function draw(){
+				ctx.clearRect(0,0,can.width,can.height);
+				ctx.drawImage(bImg[0],0,0);
+				
+				
+				ctx.fillStyle = "rgba(255, 0, 0, " + 1.0+ ")";
+				ctx.font = "bold "+20+"pt Arial";
+				ctx.fillText("  "+player.health, 10, 50);
+				
+				for(var i = 0; i <stamps.length;i++){
+					var x1 = stamps[i].x-img[stamps[i].image].width/4;
+					var y1 = stamps[i].y-img[stamps[i].image].height/4;
+					var sx = (img[stamps[i].image].width/2);
+					var sy = (img[stamps[i].image].height/2);
+					stamps[i].ix = x1;
+					stamps[i].iy = y1;
+					stamps[i].isx = sx;
+					stamps[i].isy = sy;
+					ctx.fillStyle = "rgba(255, 0, 0, " + 1.0+ ")";
+					ctx.drawImage(img[stamps[i].image],x1,y1,sx,sy);
+				}
+			}
+			
+			function init(){
+				setInterval(draw,1000/33);
+				setInterval(game,1000/33);
+				setInterval(autoGen,1000/33);
+			}
+			
+		</script>
+	</body>
+</html>
